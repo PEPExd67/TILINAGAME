@@ -34,13 +34,29 @@ button:focus-visible{outline:3px solid #ffd34d}body{touch-action:manipulation;ov
 <div id="ctr"><button id="bl" class="pb">◀</button><button id="br" class="pb">▶</button><button id="ok" class="pb">▼ ENTER / TOCAR</button></div>
 <div id="dlg"><div id="who"></div><div id="txt"></div><div id="ctl"></div></div>
 </div>
+
+<!-- Elemento de reproducción para el video cancion.mp4 -->
+<video id="bgMusic" src="cancion.mp4" loop preload="auto" style="display:none;"></video>
+
 <script>
 const $=i=>document.getElementById(i),sleep=ms=>new Promise(r=>setTimeout(r,ms)),dlg=$('dlg'),g=$('c').getContext('2d');
 let sc='title',T=0,wx=0,kw=0,tg=0,goal=null,res=null,ax=60,slx=200,sla=0,s2x=380,jx=240,sox=-80,portal=0,fin=0,flw=0,sit=0,ex='n',sp=0,spk='',face=1,gz=0,spark=0,kl=0;
 const PETALS=Array.from({length:110},(_,i)=>({x:Math.random()*320,y:Math.random()*180,v:.25+Math.random()*.5,p:i}));
-/* ---------- AUDIO ---------- */
-let A,mg,mus=null,mp3=null;
-function au(){if(!A){A=new(window.AudioContext||window.webkitAudioContext)();mg=A.createGain();mg.gain.value=.5;mg.connect(A.destination)}A.resume()}
+
+/* ---------- AUDIO Y REPRODUCCIÓN ---------- */
+let A,mg,mus=null;
+const bgMusic = $('bgMusic');
+
+function au(){
+    if(!A){
+        A=new(window.AudioContext||window.webkitAudioContext)();
+        mg=A.createGain();
+        mg.gain.value=.5;
+        mg.connect(A.destination);
+    }
+    if(A.state==='suspended') A.resume();
+}
+
 function tn(type,f,f2,d,v=.2,t=0){if(!A)return;const o=A.createOscillator(),gn=A.createGain(),s=A.currentTime+t;o.type=type;o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);gn.gain.setValueAtTime(v,s);gn.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(gn);gn.connect(mg);o.start(s);o.stop(s+d+.02)}
 function nz(d,v){if(!A)return;const b=A.createBuffer(1,A.sampleRate*d,A.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;const s=A.createBufferSource(),gn=A.createGain();s.buffer=b;gn.gain.setValueAtTime(v,A.currentTime);gn.gain.exponentialRampToValueAtTime(.001,A.currentTime+d);s.connect(gn);gn.connect(mg);s.start()}
 const m2f=m=>440*Math.pow(2,(m-69)/12);
@@ -49,15 +65,32 @@ const sting=()=>{nz(.9,.5);tn('sawtooth',90,40,1,.3);tn('square',466,0,.9,.1);tn
 const good=()=>[523,659,784,1047].forEach((f,i)=>tn('square',f,0,.15,.12,i*.08));
 const bad=()=>{tn('square',220,110,.4,.15);tn('sawtooth',160,70,.4,.1)};
 const whoosh=()=>{nz(.7,.35);tn('triangle',200,2200,.8,.1)};
-/* ---------- MÚSICA 8 BITS (Web Audio) ---------- */
+
+/* ---------- MÚSICA ---------- */
 const CH=[[57,60,64],[53,57,60],[60,64,67],[55,59,62]],ML=[[76,74,72,69],[77,76,74,72],[79,76,72,76],[74,71,67,74]];
-let fadeT=null;
-function music(on){clearInterval(mus);mus=null;if(!on||!A){mg&&mg.gain.setTargetAtTime(.5,A.currentTime,.05);return Promise.resolve(true)}
- mg.gain.setTargetAtTime(.5,A.currentTime,.05);let n=0,nt=A.currentTime+.1;
- mus=setInterval(()=>{while(nt<A.currentTime+.2){const b=(n>>3)&3,i=n&7,o=nt-A.currentTime;
-  tn('square',m2f(CH[b][[0,1,2,1,0,1,2,1][i]]),0,.22,.05,o);if(i%2==0)tn('square',m2f(ML[b][i>>1]),0,.4,.07,o);if(i==0){tn('triangle',m2f(CH[b][0]-24),0,1.2,.16,o)}
-  if(i%4==2)tn('triangle',m2f(CH[b][0]-12),0,.25,.1,o);n++;nt+=.33}},80);return Promise.resolve(true)}
+
+function music(on){
+    clearInterval(mus);
+    mus=null;
+    if(!on){
+        bgMusic.pause();
+        bgMusic.currentTime=0;
+        return Promise.resolve(true);
+    }
+
+    au();
+    // Reproduce cancion.mp4
+    bgMusic.play().catch(e=>{
+        console.log("No se pudo reproducir el archivo cancion.mp4, activando música sintetizada de respaldo.");
+        let n=0,nt=A.currentTime+.1;
+        mus=setInterval(()=>{while(nt<A.currentTime+.2){const b=(n>>3)&3,i=n&7,o=nt-A.currentTime;
+         tn('square',m2f(CH[b][[0,1,2,1,0,1,2,1][i]]),0,.22,.05,o);if(i%2==0)tn('square',m2f(ML[b][i>>1]),0,.4,.07,o);if(i==0){tn('triangle',m2f(CH[b][0]-24),0,1.2,.16,o)}
+         if(i%4==2)tn('triangle',m2f(CH[b][0]-12),0,.25,.1,o);n++;nt+=.33}},80);
+    });
+    return Promise.resolve(true);
+}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&A)A.resume()});
+
 /* ---------- UI / DIÁLOGOS ---------- */
 const V={AURORA:[520,'square'],SLENDERMAN:[90,'sawtooth'],'JEFF THE KILLER':[170,'square'],SONIC:[760,'square']};
 function tap(){return new Promise(r=>{const f=e=>{if(e.type=='keydown'&&e.key!='Enter'&&e.key!=' ')return;dlg.removeEventListener('pointerdown',f);removeEventListener('keydown',f);r()};setTimeout(()=>{dlg.addEventListener('pointerdown',f);addEventListener('keydown',f)},180)})}
@@ -80,6 +113,7 @@ $('ok').onclick=()=>{au();dlg.dispatchEvent(new Event('pointerdown'))};
 addEventListener('keydown',e=>{const t=e.target.tagName;if(e.key==' '&&t!='INPUT'&&t!='BUTTON')e.preventDefault();if(t=='INPUT')return;if(e.key=='ArrowRight'||e.key=='d')kw=1;if(e.key=='ArrowLeft'||e.key=='a')kl=1});
 addEventListener('keyup',e=>{if(e.key=='ArrowRight'||e.key=='d')kw=0;if(e.key=='ArrowLeft'||e.key=='a')kl=0});
 addEventListener('gesturestart',e=>e.preventDefault());
+
 /* ---------- PIXEL ART ---------- */
 const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),w,h)};
 const HAIR='#0a0910',SK='#f8ebe3',BR='#4a2a18';
@@ -161,7 +195,7 @@ function drawTitle(){sky('#0a0610','#2a1030');for(let i=0;i<50;i++)R((i*61)%320,
  g.textAlign='center';g.fillStyle='#e0566f';g.font='14px "Press Start 2P",monospace';g.fillText('AURORA',160,30);g.fillStyle='#d8d2c4';g.font='7px "Press Start 2P",monospace';g.fillText('UN AMOR QUE DA MIEDO',160,44)}
 function loop(){T++;let mv=0;if(goal!=null){if(kw){mv=1;face=1;wx+=.9;if(wx>=goal){goal=null;res()}}else if(kl&&wx>0){mv=1;face=-1;wx-=.9}}
  g.clearRect(0,0,320,180);if(sc=='title')drawTitle();else if(sc=='forest')drawForest(mv);else if(sc=='int')drawInt(0);else drawSak();requestAnimationFrame(loop)}
-/* ---------- GUION ---------- */
+/* ---------- GUION DE JUEGO ---------- */
 async function move(set,a,b,ms){const s=performance.now();while(true){const k=Math.min(1,(performance.now()-s)/ms);set(a+(b-a)*k);if(k>=1)break;await sleep(16)}}
 async function game(){
  sc='title';ex='n';sp=0;spk='';face=1;wx=0;ax=60;slx=200;sla=0;s2x=380;sox=-80;portal=0;flw=0;sit=0;$('fin').style.display='none';music(false);unfade();
@@ -193,7 +227,7 @@ async function game(){
  await say('SLENDERMAN','Perdón por la tardanza. ¿Me perdí de algo?');
  await say('JEFF THE KILLER','Aurora nos estaba contando cuánto ama a Pepin.');
  await say('AURORA','Y lo repetiría mil veces. Pero primero... ¿ustedes dos siempre son así de dramáticos?');
- await music(true);await say('NARRADOR','♪ Empieza a sonar una balada romántica de 8 bits ♪');
+ await music(true);await say('NARRADOR','♪ Empieza a sonar la música de fondo ♪');
  await say('SLENDERMAN','No tengo ojos, pero creo que se me humedecieron.');
  await say('JEFF THE KILLER','Callado, Slender. Estás arruinando mi reputación.');
  /* FASE 5 */
