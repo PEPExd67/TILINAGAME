@@ -35,8 +35,8 @@ button:focus-visible{outline:3px solid #ffd34d}body{touch-action:manipulation;ov
 <div id="dlg"><div id="who"></div><div id="txt"></div><div id="ctl"></div></div>
 </div>
 
-<!-- Elemento multimedia para cancion.mp4 -->
-<video id="bgMusic" src="cancion.mp4" preload="auto" style="display:none;"></video>
+<!-- Elemento de audio invisible: solo reproducirá el sonido de cancion.mp4 sin mostrar video -->
+<audio id="bgMusic" src="cancion.mp4" preload="auto"></audio>
 
 <script>
 const $=i=>document.getElementById(i),sleep=ms=>new Promise(r=>setTimeout(r,ms)),dlg=$('dlg'),g=$('c').getContext('2d');
@@ -66,7 +66,7 @@ const good=()=>[523,659,784,1047].forEach((f,i)=>tn('square',f,0,.15,.12,i*.08))
 const bad=()=>{tn('square',220,110,.4,.15);tn('sawtooth',160,70,.4,.1)};
 const whoosh=()=>{nz(.7,.35);tn('triangle',200,2200,.8,.1)};
 
-/* ---------- MÚSICA (Controlada sin repeticiones automáticas) ---------- */
+/* ---------- MÚSICA (Solo Audio) ---------- */
 function music(on){
     if(!on){
         bgMusic.pause();
@@ -74,9 +74,14 @@ function music(on){
         return;
     }
     au();
-    bgMusic.currentTime = 0; // Reinicia al inicio para que suene limpio
+    bgMusic.currentTime = 0; // Reinicia el audio limpio
     bgMusic.play().catch(e=>{
-        console.log("No se pudo reproducir cancion.mp4");
+        console.log("Audio bloqueado o no encontrado, usando respaldo sintético.");
+        let n=0,nt=A.currentTime+.1;
+        const CH=[[57,60,64],[53,57,60],[60,64,67],[55,59,62]],ML=[[76,74,72,69],[77,76,74,72],[79,76,72,76],[74,71,67,74]];
+        mus=setInterval(()=>{while(nt<A.currentTime+.2){const b=(n>>3)&3,i=n&7,o=nt-A.currentTime;
+         tn('square',m2f(CH[b][[0,1,2,1,0,1,2,1][i]]),0,.22,.05,o);if(i%2==0)tn('square',m2f(ML[b][i>>1]),0,.4,.07,o);if(i==0){tn('triangle',m2f(CH[b][0]-24),0,1.2,.16,o)}
+         if(i%4==2)tn('triangle',m2f(CH[b][0]-12),0,.25,.1,o);n++;nt+=.33}},80);
     });
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&A)A.resume()});
@@ -218,7 +223,7 @@ async function game(){
  await say('JEFF THE KILLER','Aurora nos estaba contando cuánto ama a Pepin.');
  await say('AURORA','Y lo repetiría mil veces. Pero primero... ¿ustedes dos siempre son así de dramáticos?');
  
- // La canción (cancion.mp4) comienza a sonar aquí exactamente
+ // Aquí comienza a sonar el audio limpio de cancion.mp4
  music(true);
  
  await say('NARRADOR','♪ Empieza a sonar la música de fondo ♪');
@@ -228,7 +233,7 @@ async function game(){
  /* FASE 5 */
  await say('NARRADOR','De pronto, un zumbido azul rasga el aire...');
  
- // La música se corta y detiene justo cuando aparece Sonic
+ // Aquí se apaga el audio exactamente cuando entra Sonic
  music(false);
 
  coin();await move(v=>sox=v,-80,140,450);flw=0;
