@@ -35,8 +35,8 @@ button:focus-visible{outline:3px solid #ffd34d}body{touch-action:manipulation;ov
 <div id="dlg"><div id="who"></div><div id="txt"></div><div id="ctl"></div></div>
 </div>
 
-<!-- Elemento de reproducción para el video cancion.mp4 -->
-<video id="bgMusic" src="cancion.mp4" loop preload="auto" style="display:none;"></video>
+<!-- Elemento multimedia para cancion.mp4 -->
+<video id="bgMusic" src="cancion.mp4" preload="auto" style="display:none;"></video>
 
 <script>
 const $=i=>document.getElementById(i),sleep=ms=>new Promise(r=>setTimeout(r,ms)),dlg=$('dlg'),g=$('c').getContext('2d');
@@ -66,28 +66,18 @@ const good=()=>[523,659,784,1047].forEach((f,i)=>tn('square',f,0,.15,.12,i*.08))
 const bad=()=>{tn('square',220,110,.4,.15);tn('sawtooth',160,70,.4,.1)};
 const whoosh=()=>{nz(.7,.35);tn('triangle',200,2200,.8,.1)};
 
-/* ---------- MÚSICA ---------- */
-const CH=[[57,60,64],[53,57,60],[60,64,67],[55,59,62]],ML=[[76,74,72,69],[77,76,74,72],[79,76,72,76],[74,71,67,74]];
-
+/* ---------- MÚSICA (Controlada sin repeticiones automáticas) ---------- */
 function music(on){
-    clearInterval(mus);
-    mus=null;
     if(!on){
         bgMusic.pause();
         bgMusic.currentTime=0;
-        return Promise.resolve(true);
+        return;
     }
-
     au();
-    // Reproduce cancion.mp4
+    bgMusic.currentTime = 0; // Reinicia al inicio para que suene limpio
     bgMusic.play().catch(e=>{
-        console.log("No se pudo reproducir el archivo cancion.mp4, activando música sintetizada de respaldo.");
-        let n=0,nt=A.currentTime+.1;
-        mus=setInterval(()=>{while(nt<A.currentTime+.2){const b=(n>>3)&3,i=n&7,o=nt-A.currentTime;
-         tn('square',m2f(CH[b][[0,1,2,1,0,1,2,1][i]]),0,.22,.05,o);if(i%2==0)tn('square',m2f(ML[b][i>>1]),0,.4,.07,o);if(i==0){tn('triangle',m2f(CH[b][0]-24),0,1.2,.16,o)}
-         if(i%4==2)tn('triangle',m2f(CH[b][0]-12),0,.25,.1,o);n++;nt+=.33}},80);
+        console.log("No se pudo reproducir cancion.mp4");
     });
-    return Promise.resolve(true);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&A)A.resume()});
 
@@ -227,11 +217,20 @@ async function game(){
  await say('SLENDERMAN','Perdón por la tardanza. ¿Me perdí de algo?');
  await say('JEFF THE KILLER','Aurora nos estaba contando cuánto ama a Pepin.');
  await say('AURORA','Y lo repetiría mil veces. Pero primero... ¿ustedes dos siempre son así de dramáticos?');
- await music(true);await say('NARRADOR','♪ Empieza a sonar la música de fondo ♪');
+ 
+ // La canción (cancion.mp4) comienza a sonar aquí exactamente
+ music(true);
+ 
+ await say('NARRADOR','♪ Empieza a sonar la música de fondo ♪');
  await say('SLENDERMAN','No tengo ojos, pero creo que se me humedecieron.');
  await say('JEFF THE KILLER','Callado, Slender. Estás arruinando mi reputación.');
+ 
  /* FASE 5 */
  await say('NARRADOR','De pronto, un zumbido azul rasga el aire...');
+ 
+ // La música se corta y detiene justo cuando aparece Sonic
+ music(false);
+
  coin();await move(v=>sox=v,-80,140,450);flw=0;
  await say('SONIC','¡Aurora! ¡Esta flor es para ti! ¡Y ahora sujétate fuerte!');
  coin();flw=1;ex='joy';sp=1;whoosh();portal=1;move(v=>portal=v,1,32,900);
